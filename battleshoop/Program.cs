@@ -19,22 +19,33 @@ namespace battleshoop
             WRONG = "X",
             BOOM = "A";
 
-        private int _player;
         private string[,] _grid;
         private bool[,] _ships;
+
+        private int _turns = 0;
+        private int _found = 0;
+        private long _start;
 
         public static Random _random = new Random();
 
         public Game()
         {
 
-            runStage();
+            runStage(null);
         }
 
-        public void runStage()
+        public void runStage(String input)
         {
             if (_grid == null) makeGrid();
             print();
+
+            Console.WriteLine("");
+            if (input != null) Console.WriteLine(input);
+            Console.WriteLine("===================================");
+            Console.WriteLine("Turns taken: " + _turns);
+            Console.WriteLine("Found: " + _found);
+            Console.WriteLine("Time Taken: " + Utils.format(Environment.TickCount - _start));
+            Console.WriteLine("===================================");
             Console.WriteLine("Please enter your guess in \"X Z\" format: for example 0 0");
             processInput(Console.ReadLine());
         }
@@ -44,8 +55,7 @@ namespace battleshoop
             string[] args = s.Split(" ");
             if (args.Length == 1)
             {
-                Console.WriteLine("Invalid input.");
-                runStage();
+                runStage("Invalid input.");
                 return;
             }
 
@@ -58,36 +68,45 @@ namespace battleshoop
             }
             catch(FormatException e)
             {
-                Console.WriteLine("Invalid input (" + e.Message + ")");
-                runStage();
+                runStage("Invalid input (" + e.Message + ")");
                 return;
             }
 
             if (x >= SIZE || y >= SIZE || x < 0 || y < 0)
             {
-                Console.WriteLine("Out of bounds!");
-                runStage();
+                runStage("Out of bounds!");
                 return;
             }
 
             if (!_grid[x, y].Equals(UNKNOWN))
             {
-                Console.WriteLine("You've already chose " + x + "," + y);
-                runStage();
+                runStage("You've already chose " + x + "," + y);
                 return;
             }
+
+            _turns++;
 
             if (_ships[x, y])
             {
+                Console.ForegroundColor = ConsoleColor.Green;
+
+                _found++;
                 _grid[x, y] = BOOM;
-                Console.WriteLine("Boom! W");
-                runStage();
+
+                if (_found == SHIPS)
+                {
+                    Console.WriteLine("You found all the ships! W");
+                    Console.WriteLine("Time: " + Utils.format(Environment.TickCount - _start));
+                    return;
+                }
+                runStage("Boom! W");
                 return;
             }
 
+            Console.ForegroundColor = ConsoleColor.Red;
+
             _grid[x, y] = WRONG;
-            Console.WriteLine("Common Battleship L");
-            runStage();
+            runStage("Common Battleship L");
             return;
         }
 
@@ -106,6 +125,7 @@ namespace battleshoop
             }
 
             for (int x = 0; x < SHIPS; x++) make();
+            _start = Environment.TickCount;
         }
 
         private void make()
@@ -119,7 +139,7 @@ namespace battleshoop
 
         private void print()
         {
-           // Console.Clear();
+           Console.Clear();
 
             printTopColumn();
             for (int y = 0; y < SIZE; y++)
@@ -146,10 +166,14 @@ namespace battleshoop
             }
             Console.Write("\n");
         }
-        public int getTurn()
+    }
+
+    class Utils
+    {
+        public static string format(long milliseconds)
         {
-            if (_player++ == 2) _player = 0;
-            return _player;
+            int time = (int) milliseconds / 1000;
+            return string.Format("00:{0:D2}:{1:D2}", time / 60, time % 60);
         }
     }
 }
